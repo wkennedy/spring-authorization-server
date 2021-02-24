@@ -24,6 +24,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
@@ -33,14 +37,20 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class DefaultSecurityConfig {
 
+	private final RegisteredUsers registeredUsers;
+
+	public DefaultSecurityConfig(RegisteredUsers registeredUsers) {
+		this.registeredUsers = registeredUsers;
+	}
+
 	// formatter:off
 	@Bean
 	SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 		http
-			.authorizeRequests(authorizeRequests ->
-				authorizeRequests.anyRequest().authenticated()
-			)
-			.formLogin(withDefaults());
+				.authorizeRequests(authorizeRequests ->
+						authorizeRequests.antMatchers("/oauth2/userinfo").permitAll().anyRequest().authenticated()
+				)
+				.formLogin(withDefaults());
 		return http.build();
 	}
 	// formatter:on
@@ -48,12 +58,23 @@ public class DefaultSecurityConfig {
 	// @formatter:off
 	@Bean
 	UserDetailsService users() {
-		UserDetails user = User.withDefaultPasswordEncoder()
-				.username("user1")
-				.password("password")
-				.roles("USER")
-				.build();
-		return new InMemoryUserDetailsManager(user);
+//		Map<String, Object> claims = new HashMap<>();
+//			claims.put("givenName", "test");
+//		claims.put("sn", "test");
+//		claims.put("uid", "test");
+//		OidcUserAuthority oidcUserAuthority = new OidcUserAuthority(new OidcIdToken(UUID.randomUUID().toString(), null, null, claims));
+		Set<UserDetails> userDetailsSet = new HashSet<>();
+		List<RegisteredUsers.User> users = registeredUsers.getUsers();
+		for (RegisteredUsers.User user : users) {
+			UserDetails userDetails = User.withDefaultPasswordEncoder()
+					.username(user.getUid())
+					.password(user.getPassword())
+					.roles("USER") //TODO configurable
+					.build();
+			userDetailsSet.add(userDetails);
+		}
+
+		return new InMemoryUserDetailsManager(userDetailsSet);
 	}
 	// @formatter:on
 
