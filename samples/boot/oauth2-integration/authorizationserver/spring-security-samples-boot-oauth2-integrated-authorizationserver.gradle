@@ -1,7 +1,12 @@
 apply plugin: 'io.spring.convention.spring-sample-boot'
 
+checkstyle {
+	sourceSets = []
+}
+
 dependencies {
 	compile 'org.springframework.boot:spring-boot-starter-web'
 	compile 'org.springframework.boot:spring-boot-starter-security'
+	compile 'org.springframework.cloud:spring-cloud-starter-config:3.0.2'
 	compile project(':spring-security-oauth2-authorization-server')
 }
